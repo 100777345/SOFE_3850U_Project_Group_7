@@ -4,15 +4,21 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>/* A simple echo client using TCP */
+#include <stdio.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <strings.h>
+#include <string.h>
 
 
 
 #define SERVER_TCP_PORT 3000	/* well-known port */
-#define BUFLEN		256	/* buffer length */
+#define BUFLEN		100	/* buffer length */
 
 int main(int argc, char **argv)
 {
@@ -21,7 +27,9 @@ int main(int argc, char **argv)
 	struct	hostent		*hp;
 	struct	sockaddr_in server;
 	char	*host, *bp, rbuf[BUFLEN], sbuf[BUFLEN];
-
+	size_t value_received;
+	FILE *fp;
+	
 	switch(argc){
 	case 2:
 		host = argv[1];
@@ -58,18 +66,43 @@ int main(int argc, char **argv)
 	  exit(1);
 	}
 
-	printf("Transmit: \n");
-	while(n=read(0, sbuf, BUFLEN)){	/* get user message */
+	// Ask for the file
+	printf("Enter the name of the file: \n");
+	if((n = read(0, sbuf, BUFLEN)) != -1){	/* get user message */
+	  sbuf[strcspn(sbuf, "\n")] = '\0'; // Add null character at end
 	  write(sd, sbuf, n);		/* send it out */
-	  printf("Receive: \n");
-	  bp = rbuf;
-	  bytes_to_read = n;
-	  while ((i = read(sd, bp, bytes_to_read)) > 0){
-		bp += i;
-		bytes_to_read -=i;
+	  value_received = read(sd, rbuf, BUFLEN);
+
+	  // Check to see if error, if so print message	  
+	  if(value_received > 0 && strcmp(rbuf, "ENOENT") == 0){
+	  	fprintf(stderr, "The file was not found\n");
+	  	exit(1);
 	  }
-	  write(1, rbuf, n);
-	  printf("Transmit: \n");
+	  
+	  // Create a new file with the name provided by user
+	  fp = fopen(sbuf, "w");
+	  if(fp == NULL){
+	  	perror("failed to create file");
+	  	exit(1);
+	  }
+
+
+	 // If the file exists, write the first line to the file
+	 if(fwrite(rbuf, 1, value_received, fp) != value_received){
+	  	perror("fwrite");
+	  	exit(1);
+	  }
+	
+	  // Write the remaining lines to the file
+	  while((value_received = read(sd, rbuf, BUFLEN)) >0){
+	  	if(fwrite(rbuf, 1, value_received, fp) <0){
+	  		perror("fwrite");
+	  		exit(1);
+	  	}
+	  }
+
+	fclose(fp);
+	puts("File Successfully downloaded!");
 	}
 
 	close(sd);
