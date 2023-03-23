@@ -7,13 +7,13 @@
 #include <sys/signal.h>
 #include <sys/wait.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 
 
 #define SERVER_TCP_PORT 3000	/* well-known port */
-#define BUFLEN		256	/* buffer length */
+#define BUFLEN		100	/* buffer length */
 
-int echod(int);
+int open_file(int);
 void reaper(int);
 
 int main(int argc, char **argv)
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 	  switch (fork()){
 	  case 0:		/* child */
 		(void) close(sd);
-		exit(echod(new_sd));
+		exit(open_file(new_sd));
 	  default:		/* parent */
 		(void) close(new_sd);
 		break;
@@ -74,16 +74,38 @@ int main(int argc, char **argv)
 	}
 }
 
-/*	echod program	*/
-int echod(int sd)
+/*	open_file program	*/
+int open_file(int sd)
 {
-	char	*bp, buf[BUFLEN];
-	int 	n, bytes_to_read;
+	char	*bp, file_name[BUFLEN], error_code[] ="ENOENT", packet[BUFLEN];
+	int n;
+	size_t 	value_read;
+	FILE 	*fp;
 
-	while(n = read(sd, buf, BUFLEN)) 
-		write(sd, buf, n);
+	// Check to see if we have received a file name
+	if((n = read(sd, file_name, BUFLEN)) != -1){
+	
+		fp = fopen(file_name, "r"); // Open the file
+
+		// Check for errors opening the file
+		if(fp == NULL){
+			perror("Error opening the file");
+			write(sd, error_code, strlen(error_code));
+		}
+		
+		// Read every 100 bytes of the file and send it to client
+		// till no more to read.
+		while((value_read = fread(packet, 1, BUFLEN, fp)) > 0){
+			if(write(sd, packet, value_read) == -1){
+				perror("Write error");
+			}
+
+		}
+	
+	}
+
 	close(sd);
-
+	fclose(fp);
 	return(0);
 }
 

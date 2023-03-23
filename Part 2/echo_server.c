@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <string.h>
 
 
 #define SERVER_TCP_PORT 3000	/* well-known port */
@@ -77,11 +78,9 @@ int main(int argc, char **argv)
 /*	echod program	*/
 int echod(int sd)
 {
-	char	*bp, buf[BUFLEN];
-	int 	n, bytes_to_read;
+	char	buff[] = "Hello";
 
-	while(n = read(sd, buf, BUFLEN)) 
-		write(sd, buf, n);
+	write(sd, buff, strlen(buff));
 	close(sd);
 
 	return(0);
