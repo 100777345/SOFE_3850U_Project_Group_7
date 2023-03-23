@@ -1,4 +1,4 @@
-/* time_server.c - main */
+/* udp_file_server.c - main */
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -15,25 +15,22 @@ struct pdu {
 };
 
 /*------------------------------------------------------------------------
- * main - Iterative UDP server for TIME service
+ * main - UDP server for file transfer
  *------------------------------------------------------------------------
  */
 int
 main(int argc, char *argv[])
 {
 	struct  sockaddr_in fsin;	/* the from address of a client	*/
-	char    *pts;
 	int	sock;			/* server socket		*/
 	int	alen;			/* from-address length		*/
 	struct  sockaddr_in sin; /* an Internet endpoint address         */
-    int     s, type;        /* socket descriptor and socket type    */
+    int     s;        /* socket descriptor and socket type    */
 	int 	port=3000;
 	FILE *fpt;
                                                                                 
 
 	switch(argc){
-		/*case 1:
-			break;*/
 		case 2:
 			port = atoi(argv[1]);
 			break;

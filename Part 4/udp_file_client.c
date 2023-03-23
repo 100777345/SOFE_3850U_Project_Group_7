@@ -1,4 +1,4 @@
-/* time_client.c - main */
+/* udp_file_client.c - main */
 
 #include <sys/types.h>
 
@@ -14,15 +14,13 @@
 
 #define	BUFSIZE 64
 
-#define	MSG		"Any Message \n"
-
 struct pdu {
 	char type;
 	char data[100];
 };
 
 /*------------------------------------------------------------------------
- * main - UDP client for TIME service that prints the resulting time
+ * main - UDP client receiving text files from a server
  *------------------------------------------------------------------------
  */
 int
@@ -30,10 +28,9 @@ main(int argc, char **argv)
 {
 	char	*host = "localhost";
 	int	port = 3000;
-	char	contents[100];		/* 32-bit integer to hold time	*/ 
 	struct hostent	*phe;	/* pointer to host information entry	*/
 	struct sockaddr_in sin;	/* an Internet endpoint address		*/
-	int	s, n, type;	/* socket descriptor and socket type	*/
+	int	s, n;	/* socket descriptor and socket type	*/
 	FILE *fpt;
 
 	switch (argc) {
@@ -95,22 +92,22 @@ while (1){
 
 	// Recieve packets from server
 	do {
-	n = read(s, &rpdu, sizeof(rpdu.data)+1);
+		n = read(s, &rpdu, sizeof(rpdu.data)+1);
 
-	if (n < 0){
-		fprintf(stderr, "Failed to receive PDU from server.\n");
-		break;
-	}
-	
-	// Write to file if type is data
-	if (rpdu.type == 'D')
-		fputs(rpdu.data, fpt);
+		if (n < 0){
+			fprintf(stderr, "Failed to receive PDU from server.\n");
+			break;
+		}
+		
+		// Write to file if type is data
+		if (rpdu.type == 'D')
+			fputs(rpdu.data, fpt);
 
-	// Print received packet
-	fprintf(stdout, "Packet received. Type: \"%c\", Value: \"%s\".\n", rpdu.type, rpdu.data);
+		// Print received packet
+		fprintf(stdout, "Packet received. Type: \"%c\", Value: \"%s\".\n", rpdu.type, rpdu.data);
 
-	// Clear rpdu
-	memset(rpdu.data, 0, sizeof(rpdu.data));
+		// Clear rpdu
+		memset(rpdu.data, 0, sizeof(rpdu.data));
 
 	} while (rpdu.type != 'E' && rpdu.type != 'F');
 	
